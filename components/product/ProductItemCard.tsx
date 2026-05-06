@@ -25,18 +25,18 @@ export default function ProductItemCard({ product }: { product: Product }) {
           </div>
         )}
         
-        <div className="relative aspect-[4/3] bg-gray-50 overflow-hidden p-4 flex items-center justify-center">
-          <div className="relative w-full h-full transform group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
+        <div className="relative bg-gray-50 overflow-hidden p-4 flex items-center justify-center">
+          <div className="relative w-full transform group-hover:scale-110 transition-transform duration-500 flex items-center justify-center">
             <img
-              src={product.images?.[0]}
+              src={product.images?.[0]?.replace(/^\/products\//, '/EM/products/').toLowerCase().replace(/\s+/g, '-')}
               alt={product.name}
               loading="lazy"
-              className="object-contain max-w-full max-h-full"
+              className="w-full h-40 sm:h-52 md:h-60 object-contain"
             />
           </div>
         </div>
 
-        <div className="p-5 flex flex-col flex-grow">
+        <div className="p-3 sm:p-4 flex flex-col flex-grow">
           <div className="text-xs font-semibold text-brand-orange uppercase tracking-wider mb-2">
             {product.category}
           </div>

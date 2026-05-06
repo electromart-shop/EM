@@ -11,6 +11,12 @@ const basePath = process.env.NODE_ENV === "production" ? "/EM" : "";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
+  
+  const formatUrl = (url?: string) => {
+    if (!url) return `${basePath}/images/products/default.jpg`;
+    return url.replace(/^\/products\//, '/EM/products/').toLowerCase().replace(/\s+/g, '-');
+  };
+
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -110,7 +116,7 @@ export default function CartPage() {
               <div key={item.id} className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 <Link href={`/products/${item.id}`} className="block flex-shrink-0 bg-gray-50 rounded-xl p-2 w-24 h-24 relative">
                   <img
-                    src={item.images?.[0]}
+                    src={formatUrl(item.images?.[0])}
                     alt={item.name}
                     loading="lazy"
                     className="w-full h-full object-contain p-1"

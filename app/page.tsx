@@ -10,8 +10,8 @@ const products = productsData as Product[];
 export default function Home() {
   console.log("Total products loaded (Home):", products.length);
 
-  // Filter products: valid products must have at least 2 images
-  const validProducts = products.filter((p) => p.images && p.images.length >= 2);
+  // Filter products: valid products must have at least 1 image
+  const validProducts = products.filter((p) => p.images && p.images.length > 0);
 
   // Simple logic to get some products for display.
   const trendingProducts = validProducts.slice(0, 8);
@@ -126,7 +126,7 @@ export default function Home() {
           </div>
           
           {hasProducts ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {trendingProducts.map((product) => (
                 <ProductItemCard key={product.id} product={product} />
               ))}

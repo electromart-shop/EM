@@ -24,9 +24,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="flex-shrink-0">
-            <img src="/images/logo.jpg" className="h-10 w-auto object-contain logo" alt="Electromart Logo" />
-            <span className="font-bold text-xl tracking-tight text-brand-black">
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} className="flex-shrink-0 md:gap-2.5">
+            <img src="/EM/images/logo.jpg" className="h-8 md:h-10 w-auto object-contain logo" alt="Electromart Logo" />
+            <span className="font-bold text-xl md:text-3xl tracking-tight text-brand-black">
               ELECTROMART
             </span>
           </Link>

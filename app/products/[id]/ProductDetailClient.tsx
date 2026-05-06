@@ -17,11 +17,16 @@ export default function ProductDetailClient({
   relatedProducts: Product[];
 }) {
   const { addRecentlyViewed, recentlyViewed } = useCart();
-  const initialImageUrl = product.images?.[0] ? `${basePath}${product.images[0]}` : `${basePath}/images/products/default.jpg`;
+  const formatUrl = (url?: string) => {
+    if (!url) return `${basePath}/images/products/default.jpg`;
+    return url.replace(/^\/products\//, '/EM/products/').toLowerCase().replace(/\s+/g, '-');
+  };
+
+  const initialImageUrl = formatUrl(product.images?.[0]);
   const [mainImage, setMainImage] = useState(initialImageUrl);
 
   useEffect(() => {
-    setMainImage(product.images?.[0] ? `${basePath}${product.images[0]}` : `${basePath}/images/products/default.jpg`);
+    setMainImage(formatUrl(product.images?.[0]));
   }, [product]);
 
   useEffect(() => {
@@ -65,7 +70,7 @@ export default function ProductDetailClient({
             {product.images && product.images.length > 1 && (
               <div className="flex gap-4 mt-6 overflow-x-auto pb-2 px-1">
                 {product.images.map((img, idx) => {
-                  const imgUrl = `${basePath}${img}`;
+                  const imgUrl = formatUrl(img);
                   const isSelected = mainImage === imgUrl;
                   return (
                     <button 
