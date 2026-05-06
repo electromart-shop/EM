@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
-
 const nextConfig = {
-  output: 'export',
-  basePath: '/EM',
-  assetPrefix: '/EM/',
-  trailingSlash: true,
+  output: "export",
+  basePath: "/EM",
+  assetPrefix: "/EM/",
   images: {
     unoptimized: true,
   },
