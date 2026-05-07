@@ -21,16 +21,16 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 glassmorphism border-b border-gray-200">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 md:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-4 flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <img
               src="/images/logo.jpg"
-              className="h-12 md:h-16 w-auto object-contain logo"
+              className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 object-contain logo"
               alt="Electromart Logo"
             />
-            <span className="font-black text-2xl md:text-3xl xl:text-4xl tracking-tight text-brand-black leading-none">
+            <span className="font-black text-2xl md:text-5xl tracking-tight text-brand-black leading-none">
               ELECTROMART
             </span>
           </Link>

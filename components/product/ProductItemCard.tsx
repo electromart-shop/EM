@@ -33,8 +33,8 @@ export default function ProductItemCard({ product }: { product: Product }) {
         )}
 
         {/* Image Container */}
-        <div className="relative bg-white overflow-hidden rounded-xl m-3 mb-0">
-          <div className="aspect-square w-full flex items-center justify-center p-4 bg-white">
+        <div className="bg-white rounded-xl overflow-hidden m-2 sm:m-3 mb-0">
+          <div className="h-28 sm:h-44 md:h-56 w-full flex items-center justify-center p-2 sm:p-4 bg-white">
             <img
               src={imgSrc}
               alt={product.name}
@@ -49,14 +49,14 @@ export default function ProductItemCard({ product }: { product: Product }) {
         </div>
 
         {/* Info */}
-        <div className="p-3 sm:p-4 flex flex-col flex-grow">
-          <div className="text-xs font-semibold text-brand-orange uppercase tracking-wider mb-1.5">
+        <div className="p-2 sm:p-4 flex flex-col flex-grow">
+          <div className="text-xs font-semibold text-brand-orange uppercase tracking-wider mb-1">
             {product.category}
           </div>
-          <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-3 line-clamp-2 group-hover:text-brand-orange transition-colors flex-grow">
+          <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-2 line-clamp-2 group-hover:text-brand-orange transition-colors flex-grow">
             {product.name}
           </h3>
-          <div className="mt-auto flex items-center justify-between gap-2">
+          <div className="mt-auto flex items-center justify-between gap-1 sm:gap-2">
             <div className="flex flex-col">
               {product.originalPrice && (
                 <span className="text-xs text-gray-400 line-through">
@@ -64,7 +64,7 @@ export default function ProductItemCard({ product }: { product: Product }) {
                 </span>
               )}
               <span
-                className={`text-base font-black ${
+                className={`text-lg sm:text-2xl font-black ${
                   product.originalPrice ? "text-red-500" : "text-brand-orange"
                 }`}
               >
