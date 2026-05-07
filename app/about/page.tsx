@@ -1,5 +1,6 @@
 import React from "react";
 import { Zap, Heart, Cpu } from "lucide-react";
+import { getAssetPath } from "@/lib/getAssetPath";
 
 export const metadata = {
   title: "About Us | ELECTROMART",
@@ -15,7 +16,7 @@ export default function AboutPage() {
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
             <img
-              src="/images/logo.jpg"
+              src={getAssetPath("/images/logo.jpg")}
               alt="ELECTROMART Logo"
               className="w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-xl"
             />

@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Mail, MapPin, Heart, Phone } from "lucide-react";
+import { getAssetPath } from "@/lib/getAssetPath";
 
 export default function Footer() {
   return (
@@ -11,7 +12,7 @@ export default function Footer() {
           <div className="md:col-span-2 space-y-4">
             <Link href="/" className="flex items-center gap-3">
               <img
-                src="/images/logo.jpg"
+                src={getAssetPath("/images/logo.jpg")}
                 className="h-10 w-auto logo object-contain"
                 alt="Electromart Logo"
               />

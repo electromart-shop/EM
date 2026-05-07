@@ -6,24 +6,20 @@ import Link from "next/link";
 import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle } from "lucide-react";
 import { sendCustomerEmail, sendShopEmail } from "@/lib/email";
 import { useCart } from "@/context/ShoppingCartContext";
+import { getAssetPath } from "@/lib/getAssetPath";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
   
-  const formatUrl = (url?: string) => {
-    if (!url) return `/images/placeholder.png`;
-    if (url.startsWith('http')) return url;
-    return url.toLowerCase().replace(/\s+/g, '-');
-  };
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: "Vikram",
-    email: "vikram@gmail.com",
-    phone: "1234567890",
+    name: "",
+    email: "",
+    phone: "",
     notes: ""
   });
 
@@ -115,10 +111,14 @@ export default function CartPage() {
               <div key={item.id} className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 <Link href={`/products/${item.id}`} className="block flex-shrink-0 bg-gray-50 rounded-xl p-2 w-24 h-24 relative">
                   <img
-                    src={formatUrl(item.images?.[0])}
+                    src={getAssetPath(item.images?.[0] ?? "/images/placeholder.png")}
                     alt={item.name}
                     loading="lazy"
                     className="w-full h-full object-contain p-1"
+                    onError={(e) => {
+                      e.currentTarget.src = getAssetPath("/images/placeholder.png");
+                      e.currentTarget.onerror = null;
+                    }}
                   />
                 </Link>
                 
@@ -207,10 +207,11 @@ export default function CartPage() {
                         id="name"
                         name="name"
                         required
+                        autoComplete="off"
                         value={formData.name}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all"
-                        placeholder="Vikram"
+                        placeholder="Your full name"
                       />
                     </div>
                     <div>
@@ -220,10 +221,11 @@ export default function CartPage() {
                         id="email"
                         name="email"
                         required
+                        autoComplete="off"
                         value={formData.email}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all"
-                        placeholder="vikram@gmail.com"
+                        placeholder="you@example.com"
                       />
                     </div>
                     <div>
@@ -233,10 +235,11 @@ export default function CartPage() {
                         id="phone"
                         name="phone"
                         required
+                        autoComplete="off"
                         value={formData.phone}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all"
-                        placeholder="1234567890"
+                        placeholder="9876543210"
                       />
                     </div>
                     <div>
@@ -245,6 +248,7 @@ export default function CartPage() {
                         id="notes"
                         name="notes"
                         rows={2}
+                        autoComplete="off"
                         value={formData.notes}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all resize-none"
