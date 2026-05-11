@@ -4,6 +4,7 @@ interface FormData {
   name: string;
   email: string;
   phone: string;
+  address: string;
   notes?: string;
 }
 
@@ -47,6 +48,7 @@ export const sendCustomerEmail = async (
     customer_name: formData.name,
     customer_email: formData.email,
     customer_phone: formData.phone,
+    customer_address: formData.address,
 
     // IMPORTANT
     order_rows: generateOrderRows(cart),
@@ -88,6 +90,7 @@ export const sendShopEmail = async (
     customer_name: formData.name,
     customer_email: formData.email,
     customer_phone: formData.phone,
+    customer_address: formData.address,
 
     // IMPORTANT
     order_rows: generateOrderRows(cart),

@@ -20,6 +20,7 @@ export default function CartPage() {
     name: "",
     email: "",
     phone: "",
+    address: "",
     notes: ""
   });
 
@@ -240,6 +241,21 @@ export default function CartPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all"
                         placeholder="9876543210"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                        Delivery Address
+                      </label>
+                      <textarea
+                        id="address"
+                        name="address"
+                        required
+                        rows={4}
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        placeholder="Enter full delivery address"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all resize-none"
                       />
                     </div>
                     <div>
