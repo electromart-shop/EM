@@ -2,9 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { Product, useCart } from "@/context/ShoppingCartContext";
 import { getAssetPath } from "@/lib/getAssetPath";
+import ProductImage from "./ProductImage";
 
 export default function ProductItemCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
@@ -15,9 +16,16 @@ export default function ProductItemCard({ product }: { product: Product }) {
     addToCart(product);
   };
 
-  const imgSrc = getAssetPath(
-    product.images?.[0] ?? "/images/placeholder.png"
+  // Get the first valid local image (skip external URLs and empty strings)
+  const firstImage = (product.images || []).find(
+    (img) =>
+      img &&
+      typeof img === "string" &&
+      img.trim() !== "" &&
+      !img.includes("placeholder")
   );
+
+  const imgSrc = firstImage ? getAssetPath(firstImage) : "";
 
   return (
     <Link href={`/products/${product.id}`} className="group block h-full">
@@ -34,15 +42,12 @@ export default function ProductItemCard({ product }: { product: Product }) {
         {/* Image Container */}
         <div className="bg-white rounded-xl overflow-hidden m-2 sm:m-3 mb-0">
           <div className="h-28 sm:h-44 md:h-56 w-full flex items-center justify-center p-2 sm:p-4 bg-white">
-            <img
+            <ProductImage
               src={imgSrc}
               alt={product.name}
-              loading="lazy"
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-              onError={(e) => {
-                e.currentTarget.src = getAssetPath("/images/placeholder.png");
-                e.currentTarget.onerror = null;
-              }}
+              containerClassName="w-full h-full"
+              iconSize={28}
             />
           </div>
         </div>

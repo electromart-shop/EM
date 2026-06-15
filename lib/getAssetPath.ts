@@ -1,19 +1,14 @@
 /**
- * Returns the correct asset path for both localhost (dev) and GitHub Pages (production).
+ * Returns the correct asset path for deployment.
  *
- * - Development (npm run dev):  /images/logo.jpg
- * - Production (GitHub Pages):  /EM/images/logo.jpg
+ * - For Vercel / standard hosting: images are served from the root.
+ * - No /EM prefix is needed since the app is deployed at the root domain.
  *
- * process.env.NODE_ENV is replaced at build time by Next.js, so the correct
- * prefix is baked into the static output — no runtime overhead.
+ * For local images stored in public/products/, the path from products.json
+ * (e.g., "/products/arduino-uno-r3-1.webp") maps directly to the file.
  */
 export function getAssetPath(path: string): string {
-  const base =
-    process.env.NODE_ENV === "production"
-      ? "/EM"
-      : "";
-
-  if (!path) return `${base}/images/placeholder.png`;
+  if (!path || path.trim() === "") return "";
 
   // External URLs pass through unchanged
   if (path.startsWith("http")) return path;
@@ -21,5 +16,5 @@ export function getAssetPath(path: string): string {
   // Normalise: lowercase + spaces → hyphens (matches stored filenames)
   const normalised = path.toLowerCase().replace(/\s+/g, "-");
 
-  return `${base}${normalised.startsWith("/") ? normalised : `/${normalised}`}`;
+  return normalised.startsWith("/") ? normalised : `/${normalised}`;
 }

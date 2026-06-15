@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle } from "lucide-react";
 import { sendCustomerEmail, sendShopEmail } from "@/lib/email";
 import { useCart } from "@/context/ShoppingCartContext";
 import { getAssetPath } from "@/lib/getAssetPath";
+import ProductImage from "@/components/product/ProductImage";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
@@ -111,15 +111,12 @@ export default function CartPage() {
             {cart.map((item) => (
               <div key={item.id} className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 <Link href={`/products/${item.id}`} className="block flex-shrink-0 bg-gray-50 rounded-xl p-2 w-24 h-24 relative">
-                  <img
-                    src={getAssetPath(item.images?.[0] ?? "/images/placeholder.png")}
+                  <ProductImage
+                    src={getAssetPath(item.images?.[0] ?? "")}
                     alt={item.name}
-                    loading="lazy"
                     className="w-full h-full object-contain p-1"
-                    onError={(e) => {
-                      e.currentTarget.src = getAssetPath("/images/placeholder.png");
-                      e.currentTarget.onerror = null;
-                    }}
+                    containerClassName="w-full h-full"
+                    iconSize={20}
                   />
                 </Link>
                 

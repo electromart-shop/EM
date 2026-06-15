@@ -6,6 +6,7 @@ import { ArrowLeft, ShieldCheck, Truck, Zap, Package } from "lucide-react";
 import { Product, useCart } from "@/context/ShoppingCartContext";
 import ProductItemCard from "@/components/product/ProductItemCard";
 import AddToCartButton from "@/components/product/AddToCartButton";
+import ProductImage from "@/components/product/ProductImage";
 import { getAssetPath } from "@/lib/getAssetPath";
 
 export default function ProductDetailClient({
@@ -18,7 +19,8 @@ export default function ProductDetailClient({
   const { addRecentlyViewed, recentlyViewed } = useCart();
 
   const formatUrl = (url?: string) => {
-    return getAssetPath(url || "/images/placeholder.png");
+    if (!url || url.trim() === "") return "";
+    return getAssetPath(url);
   };
 
   const validImages = (product.images || [])
@@ -29,16 +31,16 @@ export default function ProductDetailClient({
         img.trim() !== "" &&
         !img.includes("placeholder")
     )
-    .map(formatUrl);
+    .map(formatUrl)
+    .filter((img) => img !== "");
 
-  const displayImages =
-    validImages.length > 0 ? validImages : [getAssetPath("/images/placeholder.png")];
+  const displayImages = validImages.length > 0 ? validImages : [];
 
-  const [mainImage, setMainImage] = useState(displayImages[0]);
+  const [mainImage, setMainImage] = useState(displayImages[0] || "");
   const [activeThumb, setActiveThumb] = useState(0);
 
   useEffect(() => {
-    setMainImage(displayImages[0]);
+    setMainImage(displayImages[0] || "");
     setActiveThumb(0);
   }, [product]);
 
@@ -83,15 +85,12 @@ export default function ProductDetailClient({
                   </span>
                 </div>
               )}
-              <img
+              <ProductImage
                 src={mainImage}
                 alt={product.name}
-                loading="lazy"
                 className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.src = getAssetPath("/images/placeholder.png");
-                  e.currentTarget.onerror = null;
-                }}
+                containerClassName="w-full h-full"
+                iconSize={48}
               />
             </div>
 
@@ -108,15 +107,12 @@ export default function ProductDetailClient({
                         : "border-gray-200 hover:border-brand-orange/50 opacity-75 hover:opacity-100"
                     }`}
                   >
-                    <img
+                    <ProductImage
                       src={img}
                       alt={`${product.name} view ${idx + 1}`}
-                      loading="lazy"
                       className="w-full h-full object-contain"
-                      onError={(e) => {
-                        e.currentTarget.src = getAssetPath("/images/placeholder.png");
-                        e.currentTarget.onerror = null;
-                      }}
+                      containerClassName="w-full h-full"
+                      iconSize={16}
                     />
                   </button>
                 ))}
