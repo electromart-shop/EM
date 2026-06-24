@@ -2,30 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Root Vars ────────────────────────────────────────────────────────────── */
 @layer base {
   :root {
     --background: #f9fafb;
     --foreground: #111827;
+    --font-inter: "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  /* GPU-accelerated rendering for main content */
+  html {
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-family: var(--font-inter);
     @apply antialiased min-h-screen flex flex-col;
+    /* Prevent layout shift */
+    overflow-x: hidden;
+  }
+
+  /* Optimise image rendering */
+  img {
+    content-visibility: auto;
+  }
+
+  /* Focus-visible for accessibility */
+  *:focus-visible {
+    outline: 2px solid #f58220;
+    outline-offset: 2px;
   }
 }
 
+/* ─── Utilities ────────────────────────────────────────────────────────────── */
 @layer utilities {
   .glassmorphism {
     @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
   }
+
+  /* Shimmer animation for image loading */
   .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
     background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Content-visibility for off-screen sections */
+  .lazy-section {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
+  }
+
+  /* Performance: will-change only on interactive elements */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  /* Smooth text rendering */
+  .text-rendering-optimized {
+    text-rendering: optimizeSpeed;
   }
 }
 
+/* ─── Animations ───────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ─── Logo hover ────────────────────────────────────────────────────────────── */
 .logo:hover {
   opacity: 0.85;
   transform: scale(1.05);
-  transition: 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* ─── Print styles ──────────────────────────────────────────────────────────── */
+@media print {
+  nav, footer, button { display: none !important; }
+  body { font-size: 12pt; }
+}
+
+/* ─── Reduce motion ─────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

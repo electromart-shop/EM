@@ -2,27 +2,92 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle, AlertCircle } from "lucide-react";
 import { sendCustomerEmail, sendShopEmail } from "@/lib/email";
 import { useCart } from "@/context/ShoppingCartContext";
 import { getAssetPath } from "@/lib/getAssetPath";
 import ProductImage from "@/components/product/ProductImage";
 
+// ─── Validation Helpers ───────────────────────────────────────────────────────
+
+function validateEmail(email: string): string {
+  if (!email.trim()) return "Email address is required.";
+  // RFC-5321 style basic pattern
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!re.test(email.trim())) return "Please enter a valid email address (e.g. you@example.com).";
+  return "";
+}
+
+function validatePhone(phone: string): string {
+  if (!phone.trim()) return "Mobile number is required.";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length !== 10) return "Mobile number must be exactly 10 digits.";
+  if (!/^[6-9]/.test(digits)) return "Please enter a valid Indian mobile number.";
+  return "";
+}
+
+function validateName(name: string): string {
+  if (!name.trim()) return "Full name is required.";
+  if (name.trim().length < 2) return "Name must be at least 2 characters.";
+  return "";
+}
+
+function validateAddress(address: string): string {
+  if (!address.trim()) return "Delivery address is required.";
+  if (address.trim().length < 10) return "Please enter a complete delivery address.";
+  return "";
+}
+
+type FormErrors = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
-  
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
-    notes: ""
+    notes: "",
   });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case "name":    return validateName(value);
+      case "email":   return validateEmail(value);
+      case "phone":   return validatePhone(value);
+      case "address": return validateAddress(value);
+      default:        return "";
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (touched[name]) {
+      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
+  };
 
   const handleQuantityChange = (id: string, current: number, change: number) => {
     const newQuantity = current + change;
@@ -33,19 +98,34 @@ export default function CartPage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
+    // Mark all required fields as touched and validate
+    const requiredFields = ["name", "email", "phone", "address"] as const;
+    const newTouched: Record<string, boolean> = {};
+    const newErrors: FormErrors = {};
+
+    requiredFields.forEach((field) => {
+      newTouched[field] = true;
+      const err = validateField(field, formData[field]);
+      if (err) newErrors[field] = err;
+    });
+
+    setTouched((prev) => ({ ...prev, ...newTouched }));
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      // Scroll to first error
+      const firstErrorEl = document.querySelector("[data-field-error]");
+      if (firstErrorEl) firstErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await sendCustomerEmail(formData, cart, cartTotal);
       await sendShopEmail(formData, cart, cartTotal);
-      
       setIsSuccess(true);
       clearCart();
       window.scrollTo(0, 0);
@@ -199,64 +279,100 @@ export default function CartPage() {
                   <h3 className="font-bold text-gray-900 mb-4">Contact Details</h3>
                   <form onSubmit={handlePlaceOrder} className="space-y-4">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         id="name"
                         name="name"
-                        required
                         autoComplete="off"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all"
+                        onBlur={handleBlur}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all ${errors.name && touched.name ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                         placeholder="Your full name"
                       />
+                      {errors.name && touched.name && (
+                        <p data-field-error className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} /> {errors.name}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="email"
                         id="email"
                         name="email"
-                        required
                         autoComplete="off"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all"
+                        onBlur={handleBlur}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all ${errors.email && touched.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                         placeholder="you@example.com"
                       />
+                      {errors.email && touched.email && (
+                        <p data-field-error className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} /> {errors.email}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                        Mobile Number <span className="text-red-500">*</span>
+                        <span className="text-gray-400 font-normal ml-1">(10 digits)</span>
+                      </label>
                       <input
                         type="tel"
                         id="phone"
                         name="phone"
-                        required
                         autoComplete="off"
+                        maxLength={10}
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all"
+                        onBlur={handleBlur}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all ${errors.phone && touched.phone ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                         placeholder="9876543210"
+                        inputMode="numeric"
                       />
+                      <div className="flex justify-between mt-1">
+                        {errors.phone && touched.phone ? (
+                          <p data-field-error className="text-xs text-red-600 flex items-center gap-1">
+                            <AlertCircle size={12} /> {errors.phone}
+                          </p>
+                        ) : <span />}
+                        <span className={`text-xs ml-auto ${formData.phone.replace(/\D/g, "").length === 10 ? "text-green-600 font-semibold" : "text-gray-400"}`}>
+                          {formData.phone.replace(/\D/g, "").length}/10
+                        </span>
+                      </div>
                     </div>
                     <div>
                       <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                        Delivery Address
+                        Delivery Address <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         id="address"
                         name="address"
-                        required
                         rows={4}
                         value={formData.address}
                         onChange={handleInputChange}
-                        placeholder="Enter full delivery address"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all resize-none"
+                        onBlur={handleBlur}
+                        placeholder="Door No, Street, City, State, PIN Code"
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all resize-none ${errors.address && touched.address ? "border-red-400 bg-red-50" : "border-gray-300"}`}
                       />
+                      {errors.address && touched.address && (
+                        <p data-field-error className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} /> {errors.address}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Order Notes (Optional)</label>
+                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                        Order Notes <span className="text-gray-400 font-normal">(Optional)</span>
+                      </label>
                       <textarea
                         id="notes"
                         name="notes"

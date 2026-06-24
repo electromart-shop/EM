@@ -1,9 +1,19 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowRight, ShieldCheck, Zap, Truck, Tag } from "lucide-react";
 import ProductItemCard from "@/components/product/ProductItemCard";
 import productsData from "@/data/products.json";
 import { Product } from "@/context/ShoppingCartContext";
+
+export const metadata: Metadata = {
+  title: "Fueling Tomorrow's Tech | Affordable Electronics for Students",
+  description:
+    "ELECTROMART – Buy electronic components at near wholesale prices in Tamil Nadu. Arduino, sensors, ICs, resistors, capacitors & more for engineering students.",
+  alternates: {
+    canonical: "https://electromart-cbe.vercel.app",
+  },
+};
 
 const products = productsData as Product[];
 
