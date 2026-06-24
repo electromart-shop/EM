@@ -123,11 +123,10 @@ export const metadata: Metadata = {
     },
   },
 
-  // Verification – add your codes here
+  // Verification – Google Search Console
   verification: {
-    google: "google774cc0e8e37ea4df",  // ← your Google Search Console verification token
-    // bing: "YOUR_BING_WEBMASTER_TOKEN", // uncomment and fill in when ready
-    // yahoo: "YOUR_YAHOO_VERIFICATION_TOKEN",
+    google: "urR1lQEVKZwuG_sIrwQJ5CFHl6RDUIo41Cc6-dJJ6cg",
+    // bing: "YOUR_BING_WEBMASTER_TOKEN",
   },
 
   // Other
