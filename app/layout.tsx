@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import TopHeader from "@/components/layout/TopHeader";
 import BottomFooter from "@/components/layout/BottomFooter";
+import WhatsAppButton from "@/components/layout/WhatsAppButton";
 import { CartProvider } from "@/context/ShoppingCartContext";
 import { getAssetPath } from "@/lib/getAssetPath";
 
@@ -216,6 +217,7 @@ export default function RootLayout({
             {children}
           </main>
           <BottomFooter />
+          <WhatsAppButton />
         </CartProvider>
       </body>
     </html>
