@@ -1,18 +1,70 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle, AlertCircle } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle, AlertCircle, Mail, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { sendCustomerEmail, sendShopEmail } from "@/lib/email";
 import { useCart } from "@/context/ShoppingCartContext";
 import { getAssetPath } from "@/lib/getAssetPath";
 import ProductImage from "@/components/product/ProductImage";
 
-// ─── Validation Helpers ───────────────────────────────────────────────────────
+// ─── DNS MX Record Check (info-only, never blocks submission) ─────────────────
+async function fetchDoH(url: string): Promise<boolean | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/dns-json" },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.Status === 3) return false;
+    if (data.Status !== 0) return null;
+    return Array.isArray(data.Answer) && data.Answer.length > 0;
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
 
+async function checkMxRecord(domain: string): Promise<boolean | null> {
+  const cfResult = await fetchDoH(
+    `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX`
+  );
+  if (cfResult !== null) return cfResult;
+  return fetchDoH(
+    `https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=MX`
+  );
+}
+
+// ─── Math CAPTCHA Generator ───────────────────────────────────────────────────
+type CaptchaChallenge = { question: string; answer: number };
+
+function generateCaptcha(): CaptchaChallenge {
+  const ops = ["+", "-", "×"] as const;
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let a: number, b: number, answer: number;
+  if (op === "+") {
+    a = Math.floor(Math.random() * 20) + 1;
+    b = Math.floor(Math.random() * 20) + 1;
+    answer = a + b;
+  } else if (op === "-") {
+    a = Math.floor(Math.random() * 20) + 10;
+    b = Math.floor(Math.random() * a) + 1;
+    answer = a - b;
+  } else {
+    a = Math.floor(Math.random() * 9) + 2;
+    b = Math.floor(Math.random() * 9) + 2;
+    answer = a * b;
+  }
+  return { question: `${a} ${op} ${b}`, answer };
+}
+
+// ─── Validation Helpers ───────────────────────────────────────────────────────
 function validateEmail(email: string): string {
   if (!email.trim()) return "Email address is required.";
-  // RFC-5321 style basic pattern
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   if (!re.test(email.trim())) return "Please enter a valid email address (e.g. you@example.com).";
   return "";
@@ -43,7 +95,10 @@ type FormErrors = {
   email?: string;
   phone?: string;
   address?: string;
+  captcha?: string;
 };
+
+type MxStatus = "idle" | "checking" | "valid" | "invalid" | "unknown";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -65,6 +120,29 @@ export default function CartPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // ── MX status (info-only, never blocks) ────────────────────────────────────
+  const [mxStatus, setMxStatus] = useState<MxStatus>("idle");
+  const mxCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── CAPTCHA ────────────────────────────────────────────────────────────────
+  const [captcha, setCaptcha] = useState<CaptchaChallenge>(() => generateCaptcha());
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [captchaShake, setCaptchaShake] = useState(false);
+
+  const refreshCaptcha = useCallback(() => {
+    setCaptcha(generateCaptcha());
+    setCaptchaInput("");
+    setErrors((prev) => ({ ...prev, captcha: undefined }));
+  }, []);
+
+  // Re-generate captcha when checkout opens
+  useEffect(() => {
+    if (isCheckingOut) {
+      setCaptcha(generateCaptcha());
+      setCaptchaInput("");
+    }
+  }, [isCheckingOut]);
+
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case "name":    return validateName(value);
@@ -75,9 +153,30 @@ export default function CartPage() {
     }
   };
 
+  // MX check — purely informational
+  const triggerMxCheck = useCallback((email: string) => {
+    if (mxCheckTimer.current) clearTimeout(mxCheckTimer.current);
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!re.test(email.trim())) {
+      setMxStatus("idle");
+      return;
+    }
+    const domain = email.trim().split("@")[1];
+    setMxStatus("checking");
+    mxCheckTimer.current = setTimeout(async () => {
+      const result = await checkMxRecord(domain);
+      if (result === null) {
+        setMxStatus("unknown");
+      } else {
+        setMxStatus(result ? "valid" : "invalid");
+      }
+    }, 700);
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "email") triggerMxCheck(value);
     if (touched[name]) {
       setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
     }
@@ -87,6 +186,7 @@ export default function CartPage() {
     const { name, value } = e.target;
     setTouched((prev) => ({ ...prev, [name]: true }));
     setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
+    if (name === "email") triggerMxCheck(value);
   };
 
   const handleQuantityChange = (id: string, current: number, change: number) => {
@@ -101,7 +201,6 @@ export default function CartPage() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Mark all required fields as touched and validate
     const requiredFields = ["name", "email", "phone", "address"] as const;
     const newTouched: Record<string, boolean> = {};
     const newErrors: FormErrors = {};
@@ -112,11 +211,22 @@ export default function CartPage() {
       if (err) newErrors[field] = err;
     });
 
+    // CAPTCHA validation
+    const userAnswer = parseInt(captchaInput.trim(), 10);
+    if (isNaN(userAnswer) || userAnswer !== captcha.answer) {
+      newErrors.captcha = "Incorrect answer. Please try again.";
+      // Shake + refresh on wrong answer
+      setCaptchaShake(true);
+      setTimeout(() => {
+        setCaptchaShake(false);
+        refreshCaptcha();
+      }, 600);
+    }
+
     setTouched((prev) => ({ ...prev, ...newTouched }));
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      // Scroll to first error
       const firstErrorEl = document.querySelector("[data-field-error]");
       if (firstErrorEl) firstErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -132,6 +242,7 @@ export default function CartPage() {
     } catch (error) {
       console.error("Failed to send order emails", error);
       alert("There was an error placing your order. Please try again or contact us directly.");
+      refreshCaptcha();
     } finally {
       setIsSubmitting(false);
     }
@@ -168,7 +279,7 @@ export default function CartPage() {
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
         <p className="text-gray-500 text-lg mb-8 max-w-md text-center">
-          Looks like you haven't added any components to your cart yet.
+          Looks like you haven&apos;t added any components to your cart yet.
         </p>
         <Link
           href="/products"
@@ -278,6 +389,7 @@ export default function CartPage() {
                 <div className="border-t border-gray-100 pt-6 mt-2">
                   <h3 className="font-bold text-gray-900 mb-4">Contact Details</h3>
                   <form onSubmit={handlePlaceOrder} className="space-y-4">
+                    {/* Full Name */}
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                         Full Name <span className="text-red-500">*</span>
@@ -299,31 +411,55 @@ export default function CartPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* Email — MX check is info-only */}
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                         Email Address <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        autoComplete="off"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        onBlur={handleBlur}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all ${errors.email && touched.email ? "border-red-400 bg-red-50" : "border-gray-300"}`}
-                        placeholder="you@example.com"
-                      />
+                      <div className="relative">
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          autoComplete="off"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          onBlur={handleBlur}
+                          className={`w-full px-4 py-2 pr-9 border rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none transition-all ${
+                            errors.email && touched.email
+                              ? "border-red-400 bg-red-50"
+                              : mxStatus === "valid"
+                              ? "border-green-400"
+                              : "border-gray-300"
+                          }`}
+                          placeholder="you@example.com"
+                        />
+                        {/* MX indicator — purely informational */}
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          {mxStatus === "checking" && <Loader2 size={15} className="animate-spin text-gray-400" />}
+                          {mxStatus === "valid"    && <CheckCircle size={15} className="text-green-500" />}
+                          {mxStatus === "invalid"  && <AlertCircle size={15} className="text-amber-500" />}
+                          {(mxStatus === "idle" || mxStatus === "unknown") && <Mail size={15} className="text-gray-300" />}
+                        </span>
+                      </div>
+                      {/* Warning shown but DOES NOT block submission */}
+                      {mxStatus === "invalid" && (
+                        <p className="mt-1 text-xs text-amber-600 flex items-center gap-1">
+                          <AlertCircle size={12} /> Warning: No mail server found for this domain.
+                        </p>
+                      )}
                       {errors.email && touched.email && (
                         <p data-field-error className="mt-1 text-xs text-red-600 flex items-center gap-1">
                           <AlertCircle size={12} /> {errors.email}
                         </p>
                       )}
                     </div>
+
+                    {/* Mobile */}
                     <div>
                       <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                         Mobile Number <span className="text-red-500">*</span>
-                        <span className="text-gray-400 font-normal ml-1">(10 digits)</span>
                       </label>
                       <input
                         type="tel"
@@ -338,17 +474,14 @@ export default function CartPage() {
                         placeholder="9876543210"
                         inputMode="numeric"
                       />
-                      <div className="flex justify-between mt-1">
-                        {errors.phone && touched.phone ? (
-                          <p data-field-error className="text-xs text-red-600 flex items-center gap-1">
-                            <AlertCircle size={12} /> {errors.phone}
-                          </p>
-                        ) : <span />}
-                        <span className={`text-xs ml-auto ${formData.phone.replace(/\D/g, "").length === 10 ? "text-green-600 font-semibold" : "text-gray-400"}`}>
-                          {formData.phone.replace(/\D/g, "").length}/10
-                        </span>
-                      </div>
+                      {errors.phone && touched.phone && (
+                        <p data-field-error className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} /> {errors.phone}
+                        </p>
+                      )}
                     </div>
+
+                    {/* Address */}
                     <div>
                       <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                         Delivery Address <span className="text-red-500">*</span>
@@ -369,6 +502,8 @@ export default function CartPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* Notes */}
                     <div>
                       <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
                         Order Notes <span className="text-gray-400 font-normal">(Optional)</span>
@@ -384,12 +519,62 @@ export default function CartPage() {
                         placeholder="Any special instructions..."
                       ></textarea>
                     </div>
-                    
+
+                    {/* ── Math CAPTCHA ─────────────────────────────────────── */}
+                    <div className={`rounded-xl border-2 p-4 transition-all ${errors.captcha ? "border-red-300 bg-red-50" : "border-gray-200 bg-gray-50"} ${captchaShake ? "animate-shake" : ""}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <ShieldCheck size={13} className="text-brand-orange" />
+                          Security Check
+                        </div>
+                        <button
+                          type="button"
+                          onClick={refreshCaptcha}
+                          className="text-gray-400 hover:text-brand-orange transition-colors p-1 rounded"
+                          title="New question"
+                          aria-label="Refresh CAPTCHA"
+                        >
+                          <RefreshCw size={13} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {/* Styled question display — harder for bots to parse */}
+                        <div className="flex-shrink-0 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm select-none">
+                          <span
+                            className="font-mono font-bold text-gray-800 tracking-widest"
+                            style={{ fontSize: "1.1rem", letterSpacing: "0.18em", fontStyle: "italic" }}
+                          >
+                            {captcha.question} = ?
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          id="captcha-input"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          value={captchaInput}
+                          onChange={(e) => {
+                            setCaptchaInput(e.target.value.replace(/\D/g, ""));
+                            setErrors((prev) => ({ ...prev, captcha: undefined }));
+                          }}
+                          className={`w-20 px-3 py-2 border rounded-lg text-center font-bold text-lg outline-none focus:ring-2 focus:ring-brand-orange transition-all ${errors.captcha ? "border-red-400 bg-red-50" : "border-gray-300 bg-white"}`}
+                          placeholder="?"
+                          maxLength={4}
+                        />
+                      </div>
+                      {errors.captcha && (
+                        <p data-field-error className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                          <AlertCircle size={12} /> {errors.captcha}
+                        </p>
+                      )}
+                    </div>
+
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-white bg-brand-orange hover:bg-[#ff943d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange disabled:opacity-70 transition-all mt-6"
+                      className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-white bg-brand-orange hover:bg-[#ff943d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange disabled:opacity-60 disabled:cursor-not-allowed transition-all mt-2"
                     >
+                      {isSubmitting && <Loader2 size={18} className="animate-spin" />}
                       {isSubmitting ? "Processing..." : "Place Order"}
                     </button>
                     <button

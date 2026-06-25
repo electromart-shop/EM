@@ -1855,5 +1855,31 @@
       "/products/wifi-usb-adapter-module-for-arduino--2.webp"
     ],
     "category": "Components"
+  },
+  {
+    "id": "esp32-cam-1782402134719",
+    "name": "ESP32 CAM",
+    "category": "Microcontrollers",
+    "price": 598.98,
+    "images": [
+      "https://m.media-amazon.com/images/I/61Vpd9vgOxL._AC_SL1279_.jpg",
+      "https://m.media-amazon.com/images/I/61K7KNAMBHL._AC_SL1500_.jpg",
+      "https://arduinokitproject.com/wp-content/uploads/2024/06/ESP32-CAM-Pinout-1.webp"
+    ],
+    "description": "",
+    "tags": []
+  },
+  {
+    "id": "espressif-esp32-c61-devkitc-1-n8r2-development-board-1782402310558",
+    "name": "Espressif ESP32-C61-DevKitC-1-N8R2 Development Board",
+    "category": "Microcontrollers",
+    "price": 999,
+    "images": [
+      "https://robu.in/wp-content/uploads/2025/08/29-1.jpg",
+      "https://www.electronics-lab.com/wp-content/uploads/2024/10/esp32-c61-devkitc-1-v1-annotated-photo.png",
+      "https://www.electronics-lab.com/wp-content/uploads/2024/10/esp32-c61-devkitc-1-pin-layout.png"
+    ],
+    "description": "",
+    "tags": []
   }
 ]
