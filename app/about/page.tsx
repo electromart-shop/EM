@@ -1,10 +1,39 @@
-import React from "react";
+import type { Metadata } from "next";
 import { Zap, Heart, Cpu } from "lucide-react";
 import { getAssetPath } from "@/lib/getAssetPath";
 
-export const metadata = {
+const BASE_URL = "https://electromart-cbe.vercel.app";
+
+export const metadata: Metadata = {
   title: "About Us | ELECTROMART",
-  description: "Learn about ELECTROMART's mission to provide affordable electronic components for students.",
+  description:
+    "Learn about ELECTROMART's mission to provide affordable electronic components for students. Founded by students, for students, to fuel tomorrow's tech today in Tamil Nadu.",
+  alternates: {
+    canonical: `${BASE_URL}/about`,
+  },
+  openGraph: {
+    type: "website",
+    url: `${BASE_URL}/about`,
+    title: "About Us | ELECTROMART",
+    description:
+      "Learn about ELECTROMART's mission to provide affordable electronic components for students. Founded by students, for students.",
+    images: [
+      {
+        url: `${BASE_URL}/images/og-banner.png`,
+        width: 1200,
+        height: 630,
+        alt: "About ELECTROMART Coimbatore",
+      },
+    ],
+    siteName: "ELECTROMART",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Us | ELECTROMART",
+    description:
+      "Learn about ELECTROMART's mission to provide affordable electronic components for students. Founded by students, for students.",
+    images: [`${BASE_URL}/images/og-banner.png`],
+  },
 };
 
 export default function AboutPage() {

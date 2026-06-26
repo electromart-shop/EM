@@ -1,22 +1,34 @@
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
+  const disallowedPaths = [
+    "/admin",
+    "/admin/",
+    "/api/",
+    "/cart",
+    "/cart/",
+    "/image-picker",
+    "/image-picker/",
+    "/auto-image-picker",
+    "/auto-image-picker/",
+  ];
+
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/api/", "/admin/"],
+        disallow: disallowedPaths,
       },
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/admin/", "/api/"],
+        disallow: disallowedPaths,
       },
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: ["/admin/", "/api/"],
+        disallow: disallowedPaths,
       },
     ],
     sitemap: "https://electromart-cbe.vercel.app/sitemap.xml",

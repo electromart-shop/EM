@@ -24,10 +24,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
-      url: `${BASE_URL}/cart`,
+      url: `${BASE_URL}/contact`,
       lastModified: new Date(),
-      changeFrequency: "never",
-      priority: 0.3,
+      changeFrequency: "monthly",
+      priority: 0.7,
     },
   ];
 

@@ -21,6 +21,40 @@ export async function generateStaticParams() {
   return validProducts.map((product) => ({ id: product.id }));
 }
 
+// ─── Schema Generator Helper ──────────────────────────────────────────────────
+function getProductSchema(product: Product) {
+  const firstValidImage = product.images?.find(isValidImage);
+  const imageUrl = firstValidImage?.startsWith("http")
+    ? firstValidImage
+    : firstValidImage
+    ? `${BASE_URL}${firstValidImage}`
+    : `${BASE_URL}/images/og-banner.png`;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || `${product.name} from ELECTROMART`,
+    image: imageUrl,
+    sku: product.id,
+    brand: { "@type": "Brand", name: "ELECTROMART" },
+    offers: {
+      "@type": "Offer",
+      url: `${BASE_URL}/products/${product.id}`,
+      priceCurrency: "INR",
+      price: product.price,
+      priceValidUntil: new Date(
+        new Date().setFullYear(new Date().getFullYear() + 1)
+      )
+        .toISOString()
+        .split("T")[0],
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: "ELECTROMART" },
+    },
+    category: product.category,
+  };
+}
+
 // ─── Dynamic Metadata per product ────────────────────────────────────────────
 export async function generateMetadata({
   params,
@@ -47,26 +81,6 @@ export async function generateMetadata({
     : firstValidImage
     ? `${BASE_URL}${firstValidImage}`
     : `${BASE_URL}/images/og-banner.png`;
-
-  const productSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description || `${product.name} from ELECTROMART`,
-    image: imageUrl,
-    sku: product.id,
-    brand: { "@type": "Brand", name: "ELECTROMART" },
-    offers: {
-      "@type": "Offer",
-      url: `${BASE_URL}/products/${product.id}`,
-      priceCurrency: "INR",
-      price: product.price,
-      priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0],
-      availability: "https://schema.org/InStock",
-      seller: { "@type": "Organization", name: "ELECTROMART" },
-    },
-    category: product.category,
-  };
 
   return {
     title,
@@ -97,7 +111,6 @@ export async function generateMetadata({
       images: [imageUrl],
     },
     other: {
-      // JSON-LD injected via script tag is preferred, but this is a fallback
       "product:price:amount": String(product.price),
       "product:price:currency": "INR",
     },
@@ -122,5 +135,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     )
     .slice(0, 4);
 
-  return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;
+  const productSchema = getProductSchema(product);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <ProductDetailClient product={product} relatedProducts={relatedProducts} />
+    </>
+  );
 }

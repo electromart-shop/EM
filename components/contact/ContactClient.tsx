@@ -15,7 +15,10 @@ function validateEmail(email: string): string {
 
 function validatePhone(phone: string): string {
   if (!phone.trim()) return "Mobile number is required.";
-  const digits = phone.replace(/\D/g, "");
+  let digits = phone.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  }
   if (digits.length !== 10) return "Mobile number must be exactly 10 digits.";
   if (!/^[6-9]/.test(digits)) return "Please enter a valid Indian mobile number.";
   return "";
@@ -158,7 +161,7 @@ export default function ContactClient() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Get in Touch</h2>
               
               {/* Address Card */}
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/30 transition-all duration-300">
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/40 hover:-translate-y-1 hover:shadow-md transition-all duration-300 ease-out">
                 <div className="p-3 bg-brand-orange/10 text-brand-orange rounded-xl shrink-0">
                   <MapPin size={24} />
                 </div>
@@ -172,7 +175,7 @@ export default function ContactClient() {
               </div>
 
               {/* Phone Card */}
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/30 transition-all duration-300">
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/40 hover:-translate-y-1 hover:shadow-md transition-all duration-300 ease-out">
                 <div className="p-3 bg-brand-orange/10 text-brand-orange rounded-xl shrink-0">
                   <Phone size={24} />
                 </div>
@@ -189,7 +192,7 @@ export default function ContactClient() {
               </div>
 
               {/* Email Card */}
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/30 transition-all duration-300">
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/40 hover:-translate-y-1 hover:shadow-md transition-all duration-300 ease-out">
                 <div className="p-3 bg-brand-orange/10 text-brand-orange rounded-xl shrink-0">
                   <Mail size={24} />
                 </div>
@@ -205,7 +208,7 @@ export default function ContactClient() {
               </div>
 
               {/* Hours Card */}
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/30 transition-all duration-300">
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start gap-4 hover:border-brand-orange/40 hover:-translate-y-1 hover:shadow-md transition-all duration-300 ease-out">
                 <div className="p-3 bg-brand-orange/10 text-brand-orange rounded-xl shrink-0">
                   <Clock size={24} />
                 </div>
@@ -273,7 +276,7 @@ export default function ContactClient() {
                           placeholder="Your name"
                         />
                         {errors.name && touched.name && (
-                          <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                          <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1 animate-fade-in">
                             <AlertCircle size={13} /> {errors.name}
                           </p>
                         )}
@@ -300,7 +303,7 @@ export default function ContactClient() {
                             placeholder="you@example.com"
                           />
                           {errors.email && touched.email && (
-                            <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                            <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1 animate-fade-in">
                               <AlertCircle size={13} /> {errors.email}
                             </p>
                           )}
@@ -317,7 +320,7 @@ export default function ContactClient() {
                             id="phone"
                             name="phone"
                             autoComplete="tel"
-                            maxLength={10}
+                            maxLength={17}
                             value={formData.phone}
                             onChange={handleInputChange}
                             onBlur={handleBlur}
@@ -329,14 +332,14 @@ export default function ContactClient() {
                           />
                           <div className="flex justify-between mt-1">
                             {errors.phone && touched.phone ? (
-                              <p data-field-error className="text-xs text-red-600 flex items-center gap-1">
+                              <p data-field-error className="text-xs text-red-600 flex items-center gap-1 animate-fade-in">
                                 <AlertCircle size={13} /> {errors.phone}
                               </p>
                             ) : (
                               <span />
                             )}
-                            <span className={`text-xs ${formData.phone.replace(/\D/g, "").length === 10 ? "text-green-600 font-semibold" : "text-gray-400"}`}>
-                              {formData.phone.replace(/\D/g, "").length}/10
+                            <span className={`text-xs ${formData.phone.replace(/\D/g, "").replace(/^91/, "").length === 10 ? "text-green-600 font-semibold" : "text-gray-400"}`}>
+                              {Math.min(formData.phone.replace(/\D/g, "").replace(/^91/, "").length, 10)}/10
                             </span>
                           </div>
                         </div>
@@ -360,7 +363,7 @@ export default function ContactClient() {
                           placeholder="How can we help you?"
                         />
                         {errors.subject && touched.subject && (
-                          <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                          <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1 animate-fade-in">
                             <AlertCircle size={13} /> {errors.subject}
                           </p>
                         )}
@@ -384,7 +387,7 @@ export default function ContactClient() {
                           placeholder="Write your message details here..."
                         />
                         {errors.message && touched.message && (
-                          <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                          <p data-field-error className="mt-1.5 text-xs text-red-600 flex items-center gap-1 animate-fade-in">
                             <AlertCircle size={13} /> {errors.message}
                           </p>
                         )}
@@ -421,7 +424,7 @@ export default function ContactClient() {
       {/* Map Section */}
       <section className="pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white p-4 rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white p-4 rounded-3xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md hover:border-brand-orange/20 transition-all duration-300">
             <h2 className="text-xl font-bold text-gray-900 px-4 pt-2 pb-4">Our Business Location</h2>
             <div className="w-full h-[400px] md:h-[480px] rounded-2xl overflow-hidden relative border border-gray-100">
               <iframe
