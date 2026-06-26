@@ -121,3 +121,55 @@ export const sendShopEmail = async (
     throw error;
   }
 };
+
+/* =========================
+   CONTACT EMAIL
+========================= */
+export interface ContactFormData {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+}
+
+export const sendContactEmail = async (
+  formData: ContactFormData,
+  templateId: string = "template_contact"
+) => {
+  const templateParams = {
+    customer_name: formData.name,
+    customer_email: formData.email,
+    customer_phone: formData.phone,
+    customer_address: `Subject: ${formData.subject}`,
+
+    // Compatibility formatting for shop templates
+    order_rows: `<p style="font-size:14px;line-height:1.6;color:#1e293b;">${formData.message.replace(/\n/g, "<br/>")}</p>`,
+    total_price: "Contact Query",
+    order_notes: formData.message,
+
+    // General fields for dedicated contact templates
+    from_name: formData.name,
+    from_email: formData.email,
+    from_phone: formData.phone,
+    subject: formData.subject,
+    message: formData.message,
+
+    shop_email: "electromart.cbe@gmail.com",
+  };
+
+  try {
+    const response = await emailjs.send(
+      serviceId,
+      templateId,
+      templateParams,
+      publicKey
+    );
+
+    console.log("Contact email sent ✅");
+    return response;
+  } catch (error) {
+    console.error("Contact Email Error ❌", error);
+    throw error;
+  }
+};
