@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle, AlertCircle } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, CheckCircle, AlertCircle, ShieldCheck, RefreshCw } from "lucide-react";
 import { sendCustomerEmail, sendShopEmail } from "@/lib/email";
 import { useCart } from "@/context/ShoppingCartContext";
 import { getAssetPath } from "@/lib/getAssetPath";
 import ProductImage from "@/components/product/ProductImage";
+import { generateMathChallenge, checkSpamSubmission, recordSubmission, MathChallenge } from "@/lib/spamProtection";
 
 // ─── Validation Helpers ───────────────────────────────────────────────────────
 
@@ -54,6 +55,13 @@ export default function CartPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Anti-spam states
+  const [honeypot, setHoneypot] = useState("");
+  const [formStartTime, setFormStartTime] = useState<number | null>(null);
+  const [mathChallenge, setMathChallenge] = useState<MathChallenge | null>(null);
+  const [userMathAnswer, setUserMathAnswer] = useState("");
+  const [spamError, setSpamError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -64,6 +72,19 @@ export default function CartPage() {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (isCheckingOut) {
+      setFormStartTime(Date.now());
+      setMathChallenge(generateMathChallenge());
+      setSpamError(null);
+    }
+  }, [isCheckingOut]);
+
+  const handleRefreshMath = () => {
+    setMathChallenge(generateMathChallenge());
+    setUserMathAnswer("");
+  };
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -100,6 +121,7 @@ export default function CartPage() {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSpamError(null);
 
     // Mark all required fields as touched and validate
     const requiredFields = ["name", "email", "phone", "address"] as const;
@@ -122,10 +144,28 @@ export default function CartPage() {
       return;
     }
 
+    // Anti-spam verification check
+    const spamCheck = checkSpamSubmission({
+      honeypotValue: honeypot,
+      formStartTime: formStartTime ?? undefined,
+      userAnswer: userMathAnswer,
+      expectedAnswer: mathChallenge?.expectedAnswer,
+      textFieldsToScan: [formData.name, formData.address, formData.notes],
+      storageKey: "electro_mart_last_order",
+      cooldownSeconds: 60,
+    });
+
+    if (spamCheck.isSpam) {
+      setSpamError(spamCheck.reason || "Order rejected for security reasons.");
+      handleRefreshMath();
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await sendCustomerEmail(formData, cart, cartTotal);
       await sendShopEmail(formData, cart, cartTotal);
+      recordSubmission("electro_mart_last_order");
       setIsSuccess(true);
       clearCart();
       window.scrollTo(0, 0);
@@ -385,6 +425,56 @@ export default function CartPage() {
                       ></textarea>
                     </div>
                     
+                    {/* Security Verification & Honeypot */}
+                    <input
+                      type="text"
+                      name="website_url_check"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      className="hidden"
+                      aria-hidden="true"
+                    />
+
+                    {spamError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-start gap-2 animate-fade-in">
+                        <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                        <span>{spamError}</span>
+                      </div>
+                    )}
+
+                    {mathChallenge && (
+                      <div className="bg-orange-50/50 p-3.5 rounded-xl border border-orange-200/60 text-sm space-y-2">
+                        <div className="flex items-center justify-between text-gray-700 font-semibold text-xs uppercase tracking-wider">
+                          <span className="flex items-center gap-1.5 text-gray-900 font-bold">
+                            <ShieldCheck size={16} className="text-brand-orange" /> Human Verification
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleRefreshMath}
+                            className="text-gray-500 hover:text-brand-orange p-1 rounded transition-colors flex items-center gap-1 text-[11px]"
+                            title="Refresh verification question"
+                          >
+                            <RefreshCw size={12} /> Refresh
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-gray-900 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-sm whitespace-nowrap shadow-xs">
+                            {mathChallenge.num1} + {mathChallenge.num2} = ?
+                          </span>
+                          <input
+                            type="number"
+                            value={userMathAnswer}
+                            onChange={(e) => setUserMathAnswer(e.target.value)}
+                            placeholder="Your answer"
+                            className="w-full px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none"
+                            required
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <button
                       type="submit"
                       disabled={isSubmitting}

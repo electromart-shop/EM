@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, AlertCircle, AlertTriangle, ShieldCheck, RefreshCw } from "lucide-react";
 import { sendContactEmail } from "@/lib/email";
+import { generateMathChallenge, checkSpamSubmission, recordSubmission, MathChallenge } from "@/lib/spamProtection";
 
 // ─── Validation Helpers ───────────────────────────────────────────────────────
 
@@ -52,6 +53,22 @@ export default function ContactClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Anti-spam states
+  const [honeypot, setHoneypot] = useState("");
+  const [formStartTime, setFormStartTime] = useState<number | null>(null);
+  const [mathChallenge, setMathChallenge] = useState<MathChallenge | null>(null);
+  const [userMathAnswer, setUserMathAnswer] = useState("");
+
+  useEffect(() => {
+    setFormStartTime(Date.now());
+    setMathChallenge(generateMathChallenge());
+  }, []);
+
+  const handleRefreshMath = () => {
+    setMathChallenge(generateMathChallenge());
+    setUserMathAnswer("");
+  };
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -108,10 +125,28 @@ export default function ContactClient() {
       return;
     }
 
+    // Anti-spam verification check
+    const spamCheck = checkSpamSubmission({
+      honeypotValue: honeypot,
+      formStartTime: formStartTime ?? undefined,
+      userAnswer: userMathAnswer,
+      expectedAnswer: mathChallenge?.expectedAnswer,
+      textFieldsToScan: [formData.name, formData.subject, formData.message],
+      storageKey: "electro_mart_last_contact",
+      cooldownSeconds: 60,
+    });
+
+    if (spamCheck.isSpam) {
+      setSubmitError(spamCheck.reason || "Message submission rejected for security reasons.");
+      handleRefreshMath();
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Primary attempt using dedicated template
       await sendContactEmail(formData, "template_contact");
+      recordSubmission("electro_mart_last_contact");
       setIsSuccess(true);
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
       setTouched({});
@@ -120,6 +155,7 @@ export default function ContactClient() {
       try {
         // Fallback: try shop template (which we know exists and is valid)
         await sendContactEmail(formData, "template_1p14e02");
+        recordSubmission("electro_mart_last_contact");
         setIsSuccess(true);
         setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
         setTouched({});
@@ -392,6 +428,49 @@ export default function ContactClient() {
                           </p>
                         )}
                       </div>
+
+                      {/* Security Verification & Honeypot */}
+                      <input
+                        type="text"
+                        name="website_url_check"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                        tabIndex={-1}
+                        autoComplete="off"
+                        className="hidden"
+                        aria-hidden="true"
+                      />
+
+                      {mathChallenge && (
+                        <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-200/60 text-sm space-y-2 mt-2">
+                          <div className="flex items-center justify-between text-gray-700 font-semibold text-xs uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5 text-gray-900 font-bold">
+                              <ShieldCheck size={16} className="text-brand-orange" /> Human Verification
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleRefreshMath}
+                              className="text-gray-500 hover:text-brand-orange p-1 rounded transition-colors flex items-center gap-1 text-[11px]"
+                              title="Refresh verification question"
+                            >
+                              <RefreshCw size={12} /> Refresh
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-extrabold text-gray-900 bg-white px-3 py-2 rounded-lg border border-gray-200 text-sm whitespace-nowrap shadow-xs">
+                              {mathChallenge.num1} + {mathChallenge.num2} = ?
+                            </span>
+                            <input
+                              type="number"
+                              value={userMathAnswer}
+                              onChange={(e) => setUserMathAnswer(e.target.value)}
+                              placeholder="Your answer"
+                              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-orange focus:border-brand-orange outline-none"
+                              required
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       {/* Submit Button */}
                       <button
